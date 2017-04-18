@@ -1,0 +1,343 @@
+---
+title: 'Project'
+authors: "Naveenkumar Ramaraju, Rohit Dandona, Sravan Karumanchi, Srikrishna Charan Datla"
+date: "Spring 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this project we are trying to figure out, what base attributes of Pokemon makes it most used by assesing overused(Standard class) Pokemons battle data and random battle data where any Pokemon can fight with any Pokemon randomly.
+
+First we attempted to understand the attributes in the data set and its distribution. 
+
+```{r}
+library(ggplot2)
+library(GGally)
+library(tidyr)
+library(gridExtra)
+library(arm)
+getwd()
+```
+
+
+
+```{r}
+Pokemon.Attributes = read.csv('data/Pokeys.csv')
+OverUsed = read.csv('data/gen7ou-0.txt',skip = 2)
+OverUsed1500 = read.csv('data/gen7ou-1500.txt',skip = 2)
+OverUsed1695 = read.csv('data/gen7ou-1695.txt',skip = 2)
+OverUsed1825 = read.csv('data/gen7ou-1825.txt',skip = 2)
+UnderUsed = read.csv('data/gen7uu-0.txt',skip = 2)
+RandomBattle = read.csv('data/gen7randombattle-0.txt',skip = 2)
+Uber = read.csv('data/gen7ubers-0.txt',skip = 2)
+LC = read.csv('data/gen7lc-0.txt',skip = 2)
+OUPokemon <- merge(Pokemon.Attributes,OverUsed,by="Pokemon")
+RUPokemon <- merge(Pokemon.Attributes,RandomBattle,by="Pokemon")
+
+```
+
+
+
+```{r}
+attach(OUPokemon)
+ggpairs(data.frame(HP, Attack, Defense, Sp.Attack,Sp.Defense, Special, BST, Raw))
+attach(RUPokemon)
+ggpairs(data.frame(HP, Attack, Defense, Sp.Attack,Sp.Defense, Special, BST, Raw))
+```
+
+
+
+
+Now let's try a *histogram*:
+
+```{r}
+ggplot(Pokemon.Attributes,aes(x=Type.1,fill=Usage.Category)) + geom_histogram(stat="count")
+ggplot(Pokemon.Attributes,aes(x=Type.1,y=HP)) + geom_boxplot()
+ggplot(Pokemon.Attributes,aes(x=Type.1,y=Attack)) + geom_boxplot()+guides(fill=FALSE)
+ggplot(Pokemon.Attributes,aes(x=Type.1,y=Defense)) + geom_boxplot()+guides(fill=FALSE)
+ggplot(Pokemon.Attributes,aes(x=Type.1,y=BST)) + geom_boxplot()+guides(fill=FALSE)
+
+attach(Pokemon.Attributes)
+ggplot(data = as.data.frame(table(Type.1,Type.2)), aes(x = Type.1, y = Type.2)) +geom_tile(aes(fill=Freq))+ scale_fill_distiller(palette="Spectral") + ggtitle("Type 1 vs Type 2 - with no Type.2 as blank") + theme(plot.title = element_text(hjust = 0.5))
+
+
+type1_type_2 = as.data.frame(table(Type.1,Type.2))
+type1_type_2 <- type1_type_2[(type1_type_2$Type.2 != ''),]
+ggplot(data = type1_type_2, aes(x = Type.1, y = Type.2,fill=Freq)) + geom_tile() + scale_fill_distiller(palette="Spectral") + ggtitle("Type 1 vs Type 2 - when Type 2 available") + theme(plot.title = element_text(hjust = 0.5))
+
+
+
+ggplot(Pokemon.Attributes,aes(x=Generation,fill=Usage.Category)) + geom_histogram(stat="count")
+ggplot(Pokemon.Attributes,aes(x=factor(Generation),y=HP,fill=Usage.Category)) + geom_boxplot()
+ggplot(Pokemon.Attributes,aes(x=factor(Generation),y=Attack)) + geom_boxplot()+guides(fill=FALSE)
+ggplot(Pokemon.Attributes,aes(x=factor(Generation),y=Defense)) + geom_boxplot()+guides(fill=FALSE)
+ggplot(Pokemon.Attributes,aes(x=factor(Generation),y=BST)) + geom_boxplot()+guides(fill=FALSE)
+ggplot(Pokemon.Attributes,aes(x=factor(Generation),y=BST,fill=Usage.Category)) + geom_boxplot()
+```
+
+
+```{r}
+ggplot(Pokemon.Attributes, aes(x = Attack, y = Type.1)) + geom_point() + theme(axis.text.y = element_text(size = 7)) + facet_wrap(~factor(Generation), ncol = 1)
+ggplot(Pokemon.Attributes, aes(x = Defense, y = Type.1)) + geom_point() + theme(axis.text.y = element_text(size = 7)) + facet_wrap(~factor(Generation), ncol = 1)
+ggplot(Pokemon.Attributes, aes(x = BST, y = Type.1)) + geom_point() + theme(axis.text.y = element_text(size = 7)) + facet_wrap(~factor(Generation), ncol = 2)
+detach(Pokemon.Attributes)
+detach(OUPokemon)
+detach(RUPokemon)
+```
+
+
+
+```{r}
+OUPokemon <- merge(Pokemon.Attributes,OverUsed,by="Pokemon")
+#OUPokemon <- OUPokemon[order(OUPokemon$Raw,decreasing = TRUE),]
+RUPokemon <- merge(Pokemon.Attributes,RandomBattle,by="Pokemon")
+UUPokemon <- merge(Pokemon.Attributes,UnderUsed,by="Pokemon")
+UberPokemon <- merge(Pokemon.Attributes,Uber,by="Pokemon")
+LCPokemon <- merge(Pokemon.Attributes,LC,by="Pokemon")
+
+ggplot(OUPokemon, aes(x = Raw)) + geom_histogram()
+
+summary(OUPokemon$Raw)
+
+ggplot(OUPokemon, aes(x = Raw, color = factor(Usage.Category), fill = factor(Usage.Category))) + geom_histogram()
+
+ggplot(OUPokemon, aes(x = Raw, color = factor(Usage.Category), fill = factor(Usage.Category))) + geom_histogram() + facet_wrap(~Usage.Category, ncol = 1)
+
+ggplot(OUPokemon, aes(x = log(Raw), color = factor(Usage.Category), fill = factor(Usage.Category))) + geom_histogram() + facet_wrap(~Usage.Category, ncol = 1)
+
+ggplot(OUPokemon, aes(x = Raw, color = factor(Generation), fill = factor(Generation))) + geom_histogram() + facet_wrap(~Generation, ncol = 1)
+
+ggplot(OUPokemon, aes(x = log(Raw), color = factor(Generation), fill = factor(Generation))) + geom_histogram() + facet_wrap(~Generation, ncol = 1)
+
+ggplot(OUPokemon, aes(x = Raw, color = factor(Type.1), fill = factor(Type.1))) + geom_histogram() + facet_wrap(~Type.1, ncol = 1)
+
+ggplot(OUPokemon, aes(x = log(Raw), color = factor(Type.1), fill = factor(Type.1))) + geom_histogram() + facet_wrap(~Type.1, ncol = 1)
+
+pOU <- ggplot(OUPokemon, aes(x=log2(Raw), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+pUU <- ggplot(UUPokemon, aes(x=log2(Raw), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+pUber <- ggplot(UberPokemon, aes(x=log2(Raw), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+pLC <- ggplot(LCPokemon, aes(x=log2(Raw), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+pRandom <- ggplot(RUPokemon, aes(x=log2(Raw), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+
+pOURe <- ggplot(OUPokemon, aes(x=log2(Real+1), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+pUURe <- ggplot(UUPokemon, aes(x=log2(Real+1), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+pUberRe <- ggplot(UberPokemon, aes(x=log2(Real+1), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+pLCRe <- ggplot(LCPokemon, aes(x=log2(Real+1), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+pRandomRe <- ggplot(RUPokemon, aes(x=log2(Real+1), fill=Usage.Category, color=Usage.Category)) + geom_histogram()
+
+#grid.arrange(pUber, pOU, pUU, pLC, pRandom)
+grid.arrange(pUber,pUberRe, pOU,pOURe, pUU,pUURe, pLC,pLCRe, pRandom,pRandomRe, ncol=2)
+ggplot(Pokemon.Attributes,aes(x=Usage.Category,fill=factor(Generation))) + geom_histogram(stat="count")
+
+pOU <- ggplot(OUPokemon, aes(x=log2(Raw), fill=factor(Generation), color=factor(Generation))) + geom_histogram()
+pUU <- ggplot(UUPokemon, aes(x=log2(Raw), fill=factor(Generation), color=factor(Generation))) + geom_histogram()
+pUber <- ggplot(UberPokemon, aes(x=log2(Raw), fill=factor(Generation), color=factor(Generation))) + geom_histogram()
+pLC <- ggplot(LCPokemon, aes(x=log2(Raw), fill=factor(Generation), color=factor(Generation))) + geom_histogram()
+pRandom <- ggplot(RUPokemon, aes(x=log2(Raw), fill=factor(Generation), color=factor(Generation))) + geom_histogram()
+
+grid.arrange(pUber, pOU, pUU, pLC, pRandom)
+
+
+pOU <- ggplot(OUPokemon[(OUPokemon$Real.percentage > 2),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 10)
+pUU <- ggplot(UUPokemon[(UUPokemon$Real.percentage > 2),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 10)
+pUber <- ggplot(UberPokemon[(UberPokemon$Real.percentage > 2),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 10)
+pLC <- ggplot(LCPokemon[(LCPokemon$Real.percentage > 2),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 10)
+pRandom <- ggplot(RUPokemon[(RUPokemon$Real.percentage > 1),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 10)
+
+grid.arrange(pUber, pOU, pUU, pLC, pRandom)
+
+
+#pOU <- ggplot(OUPokemon[(OUPokemon$Real.percentage > 10),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 5)
+#pUU <- ggplot(UUPokemon[(UUPokemon$Real.percentage > 10),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 5)
+#pUber <- ggplot(UberPokemon[(UberPokemon$Real.percentage > 10),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 10)
+#pLC <- ggplot(LCPokemon[(LCPokemon$Real.percentage > 10),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 5)
+#pRandom <- ggplot(RUPokemon[(RUPokemon$Real.percentage > 1.3),], aes(x=Real.percentage, fill=factor(Generation), color=factor(Generation))) + geom_histogram(bins = 5)
+
+#grid.arrange(pUber, pOU, pUU, pLC, pRandom)
+```
+
+
+```{r}
+ggplot(OUPokemon, aes(x = BST, y = log(Real+1), color = factor(Generation))) + geom_point()
+ggplot(OUPokemon, aes(x = Attack, y = log(Real+1), color = factor(Generation))) + geom_point()
+ggplot(OUPokemon, aes(x = Defense, y = log(Real+1), color = factor(Generation))) + geom_point()
+
+
+
+
+
+#ggplot(OUPokemon, aes(x = BST, y = log(Real+1), color = Ability.1)) + geom_point()
+#ggplot(OUPokemon, aes(x = BST, y = log(Real+1), group = Ability.1, color = Ability.1)) + geom_point() + geom_smooth(method.args = list(degree = 1), se=FALSE)
+```
+
+
+```{r}
+ggplot(UberPokemon, aes(x = BST, y = log(Real+1), group = Generation, color = factor(Generation))) + geom_point() + geom_smooth(method.args = list(degree = 1), se=FALSE)
+ggplot(OUPokemon, aes(x = BST, y = log(Real+1), group = Generation, color = factor(Generation))) + geom_point() + geom_smooth(method.args = list(degree = 1), se=FALSE)
+ggplot(UUPokemon, aes(x = BST, y = log(Real+1), group = Generation, color = factor(Generation))) + geom_point() + geom_smooth(method.args = list(degree = 1), se=FALSE)
+ggplot(RUPokemon, aes(x = BST, y = log(Real+1), group = Generation, color = factor(Generation))) + geom_point() + geom_smooth(method.args = list(degree = 1), se=FALSE)
+```
+
+
+```{r}
+ggplot(OUPokemon, aes(x = BST, y = log(Real+1), color = Type.1)) + geom_point()
+ggplot(OUPokemon, aes(x = BST, y = log(Real+1), group = Type.1, color = Type.1)) + geom_point() + geom_smooth(method.args = list(degree = 1), se=FALSE)
+```
+
+
+```{r}
+ggplot(OUPokemon, aes(x = BST, y = log(Real+1), group = Types, color = factor(Types))) + geom_point() + geom_smooth(method.args = list(degree = 1), se=FALSE)
+```
+
+
+```{r}
+constant.glm = glm(Raw ~ 1, family = poisson, data = OUPokemon)
+display(constant.glm)
+```
+
+```{r}
+offset.glm = glm(Raw ~ 1, family = poisson, offset = log(BST), data = OUPokemon)
+display(offset.glm)
+```
+
+```{r}
+bst.glm = glm(Raw ~ BST, family = poisson, data = OUPokemon)
+display(bst.glm)
+```
+
+```{r}
+bst.UC.glm = glm(Raw ~ Attack + Defense + Special + Sp.Attack + Sp.Defense + HP +factor(Usage.Category) + factor(Generation), family = poisson, data = OUPokemon)
+deviance(bst.UC.glm)
+```
+
+```{r}
+fitted = fitted.values(bst.UC.glm)
+resid = residuals(bst.UC.glm, type = "response")
+df = data.frame(OUPokemon, .fitted = fitted, .resid = resid)
+ggplot(df, aes(x = .fitted, y = .resid)) + geom_point() + geom_smooth(span = 1, method.args = list(degree = 1))
+```
+
+```{r}
+std.resid = resid/sqrt(fitted)
+df$.std.resid = std.resid
+ggplot(df, aes(x = log(.fitted), y = .std.resid)) + geom_point() + geom_smooth(span = 1, method.args = list(degree = 1))
+
+```
+
+```{r}
+overdispersion = sum(std.resid^2)/df.residual(bst.UC.glm)
+overdispersion
+sim1 = rpois(nrow(OUPokemon), lambda = fitted.values(bst.UC.glm))
+summary(sim1)
+summary(OUPokemon$Raw)
+
+p1  <- ggplot(OUPokemon, aes(x = Raw)) + geom_histogram()
+p2 <- ggplot(data.frame(sim1), aes(x = sim1)) + geom_histogram()
+grid.arrange(p1, p2)
+
+```
+
+TO DO - Attack, Defense, usage - 3d plot???
+
+Try - linear models or quasi poisson/Negative binomial regression/loess and GAM
+
+```{r}
+constant.glm = glm(Raw ~ 1, family = poisson, data = UberPokemon)
+display(constant.glm)
+```
+
+```{r}
+offset.glm = glm(Raw ~ 1, family = poisson, offset = log(BST), data = UberPokemon)
+display(offset.glm)
+```
+
+```{r}
+bst.glm = glm(Raw ~ BST, family = poisson, data = UberPokemon)
+display(bst.glm)
+```
+
+```{r}
+bst.UC.glm = glm(Raw ~ Attack + Defense + Special + Sp.Attack + Sp.Defense + HP +factor(Usage.Category) + factor(Generation), family = poisson, data = UberPokemon)
+deviance(bst.UC.glm)
+```
+
+```{r}
+fitted = fitted.values(bst.UC.glm)
+resid = residuals(bst.UC.glm, type = "response")
+df = data.frame(UberPokemon, .fitted = fitted, .resid = resid)
+ggplot(df, aes(x = .fitted, y = .resid)) + geom_point() + geom_smooth(span = 1, method.args = list(degree = 1))
+```
+
+```{r}
+std.resid = resid/sqrt(fitted)
+df$.std.resid = std.resid
+ggplot(df, aes(x = log(.fitted), y = .std.resid)) + geom_point() + geom_smooth(span = 1, method.args = list(degree = 1))
+
+```
+
+```{r}
+overdispersion = sum(std.resid^2)/df.residual(bst.UC.glm)
+overdispersion
+sim1 = rpois(nrow(UberPokemon), lambda = fitted.values(bst.UC.glm))
+summary(sim1)
+summary(UberPokemon$Raw)
+
+p1  <- ggplot(UberPokemon, aes(x = Raw)) + geom_histogram(breaks = seq(0, 200000, 5000))
+p2 <- ggplot(data.frame(sim1), aes(x = sim1)) + geom_histogram(breaks = seq(0, 200000, 5000))
+grid.arrange(p1, p2)
+```
+
+
+
+Gen - 1
+
+```{r}
+OverUsedG1 = read.csv('data/gen1ou-0.txt',skip = 2)
+OverUsedG1 <- merge(Pokemon.Attributes,OverUsedG1,by="Pokemon")
+constant.glm = glm(Raw ~ 1, family = poisson, data = OverUsedG1)
+display(constant.glm)
+```
+
+```{r}
+offset.glm = glm(Raw ~ 1, family = poisson, offset = log(BST), data = OverUsedG1)
+display(offset.glm)
+```
+
+```{r}
+bst.glm = glm(Raw ~ BST, family = poisson, data = OverUsedG1)
+display(bst.glm)
+```
+
+```{r}
+#bst.UC.glm = glm(Raw ~ Attack + Defense + Special + Sp.Attack + Sp.Defense + HP +factor(Usage.Category) + factor(Generation), family = poisson, data = OverUsedG1)
+#deviance(bst.UC.glm)
+```
+
+```{r}
+#fitted = fitted.values(bst.UC.glm)
+#resid = residuals(bst.UC.glm, type = "response")
+#df = data.frame(OverUsedG1, .fitted = fitted, .resid = resid)
+#ggplot(df, aes(x = .fitted, y = .resid)) + geom_point() + geom_smooth(span = 1, method.args = list(degree = 1))
+```
+
+```{r}
+#std.resid = resid/sqrt(fitted)
+#df$.std.resid = std.resid
+#ggplot(df, aes(x = log(.fitted), y = .std.resid)) + geom_point() + geom_smooth(span = 1, method.args = list(degree = 1))
+
+```
+
+```{r}
+#overdispersion = sum(std.resid^2)/df.residual(bst.UC.glm)
+#overdispersion
+#sim1 = rpois(nrow(OverUsedG1), lambda = fitted.values(bst.UC.glm))
+#summary(sim1)
+#summary(OverUsedG1$Raw)
+
+#p1  <- ggplot(OverUsedG1, aes(x = Raw)) + geom_histogram(breaks = seq(0, 50000, 1000))
+#p2 <- ggplot(data.frame(sim1), aes(x = sim1)) + geom_histogram(breaks = seq(0, 50000, 1000))
+#grid.arrange(p1, p2)
+```

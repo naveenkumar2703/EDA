@@ -1,0 +1,15 @@
+ Total battles: 1
+ Avg. weight/team: 0.0
+Rank,Pokemon,Usage percentage,Raw,Raw percentage,Real,Real percentage
+1,Clamperl,0.00000,1,50.000,0,0.000
+2,Ferroseed,0.00000,1,50.000,1,60.000
+3,Aipom,0.00000,1,50.000,1,60.000
+4,Gastly,0.00000,1,50.000,1,60.000
+5,Blitzle,0.00000,1,50.000,1,60.000
+6,Axew,0.00000,1,50.000,1,60.000
+7,Litwick,0.00000,1,50.000,1,60.000
+8,Porygon,0.00000,1,50.000,1,60.000
+9,Abra,0.00000,1,50.000,1,60.000
+10,Munchlax,0.00000,1,50.000,1,60.000
+11,Cranidos,0.00000,1,50.000,1,60.000
+12,Taillow,0.00000,1,50.000,0,0.000
